@@ -4,14 +4,17 @@ class UsersResponse(object):
     """Top level response for /users endpoint"""
     def __init__(self, j):
         self.__json = json.loads(j)
-        self.__user = User(self.__json["data"][0])
+        if self.__json != None and self.__json["data"] != None and len(self.__json["data"]) > 0:
+                self.__user = User(self.__json["data"][0])
     
     @property
     def user(self):
         """User data"""
-        if self.__user != None:
-            return self.__user
-        return None
+        try:
+            self.__user
+        except:
+            return None
+        return self.__user
 
 class User(object):
     """Twitch user"""

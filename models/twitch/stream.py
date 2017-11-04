@@ -6,15 +6,17 @@ class StreamResponse(object):
     """Top level response from /kraken/streams endpoint"""
     def __init__(self, j):
         self.__json = json.loads(j)
-        if self.__json["stream"] != None:
+        if self.__json != None and self.__json["stream"] != None:
             self.__stream = Stream(self.__json["stream"])
 
     @property
     def stream(self):
         """Stream data"""
-        if hasattr(self, "__stream"):
-            return self.__stream
-        return None
+        try:
+            self.__stream
+        except:
+            return None
+        return self.__stream
 
 class Stream(object):
     """Twitch stream"""
