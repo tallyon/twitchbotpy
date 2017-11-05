@@ -1,5 +1,8 @@
 import http.client
 import json
+import sys
+import time
+import irc
 
 # import models
 import models.config
@@ -51,6 +54,15 @@ def main():
     else:
         print("Stream offline")
 
+    # Connect to twitch chat irc
+    chat = irc.IRC()
+    chat.connect("irc.chat.twitch.tv", 6667)
+    #time.sleep(3)
+    #chat.close()
+    
+    stdinControl(chat)
+    print("TwitchBotPrime dies.")
+
 def getToString(host, path):
     conn = http.client.HTTPSConnection(host)
     conn.request("GET", path)
@@ -94,6 +106,19 @@ def GetTwitchUserStream(userID, clientID):
     conn.close()
     return readAll
 
+def stdinControl(chat):
+    print("Type exit to quit")
+    while True:
+        laststdin = sys.stdin.readline().strip()
+        if len(laststdin) < 1:
+            continue
+        elif laststdin == "exit":
+            print("Exiting in 5 seconds...")
+            chat.close()
+            time.sleep(5)
+            sys.exit(0)
+        else:
+            print("Unknown command: {}".format(laststdin))
 
 if __name__ == "__main__":
     main()
