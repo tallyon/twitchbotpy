@@ -1,12 +1,15 @@
 import socket
 import threading
 import time
+import datetime
 
 class IRC:
     """IRC connection"""
-    def __init__(self):
+    def __init__(self, user, stream):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.killMe = False     # If this is set to True the listen thread will terminate and socket will close
+        self.user = user
+        self.stream = stream
     
     def connect(self, url, port):
         print("IRC connecting to chat {} on port {}".format(url, port))
@@ -50,23 +53,33 @@ class IRC:
                 #print("no data on socket yet...")
                 
             if buffer != None:
-                msg = str.split(str(buffer))
-                command = msg[1]
-                channel = msg[2]
-                # If channel starts with # remove it
-                if channel[0] == "#":
-                    channel = channel[1:]
-                # Remove first : character in message and lat 4 characters which are \r\n
-                text = msg[3].strip()[1:-5]
                 print("\t" + str(buffer))
-                print("message type {} in channel {} with text {}".format(command, channel, text))
-                if command == "PING":
-                    print("Pinged!")
-                    self.socket.send("PONG %s" % text + "\n")
-                elif command == "PRIVMSG":
-                    # Check if this is bot command
-                    if text == "!uptime":
-                        self.SendChannelMessage(channel, "UPTIME HERE")
+                msg = str.split(str(buffer))
+                if len(msg) > 1:
+                    command = msg[1]
+                    if len(msg) >= 3:
+                        channel = msg[2]
+                        # If channel starts with # remove it
+                        if channel[0] == "#":
+                            channel = channel[1:]
+                        # Remove first : character in message and lat 4 characters which are \r\n
+                        text = msg[3].strip()[1:-5]
+                        print("message type {} in channel {} with text {}".format(command, channel, text))
+                    
+                    if command == "PING":
+                        print("Pinged!")
+                        self.socket.send("PONG %s" % text + "\n")
+                    elif command == "PRIVMSG":
+                        # Check if this is bot command
+                        if text == "!uptime":
+                            streamTimeSeconds = self.stream.timedeltaSinceStart.seconds
+                            strStreamTime = "{:02}:{:02}:{:02}".format(streamTimeSeconds // 3600, streamTimeSeconds % 3600 // 60, streamTimeSeconds % 60)
+                            game = ""
+                            if self.stream.game != None:
+                                game = self.stream.game
+                            self.SendChannelMessage(channel, "{} is streaming {} for {} PogChamp".format(self.user.name, game, strStreamTime))
+                        elif text == "!social":
+                            self.SendChannelMessage(channel, "Podążaj za noiya00 na twitter: https://twitter.com/noiya00 i facebook: https://www.facebook.com/noiya00 Kappa")
     
     def JoinServer(self, oauth, nick):
         print("IRC join server as " + nick + "...")

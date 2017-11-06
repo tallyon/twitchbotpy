@@ -25,6 +25,7 @@ def main():
     response = GetTwitchUser(config.channelName, config.clientID)
     # print(str(response) + "\n\n")
     userResponse = models.twitch.user.UsersResponse(response)
+    user = userResponse.user
 
     print("Twitch channel {} (login: {}, ID: {})\nView count: {}\nChannel type: {}\nDescription: {}".format(
         userResponse.user.displayName,
@@ -43,6 +44,7 @@ def main():
     # print(str(response) + "\n\n")
 
     streamResponse = models.twitch.stream.StreamResponse(response)
+    stream = streamResponse.stream
 
     if streamResponse.stream != None:
         print("Streaming {} with {} viewers for {} with average FPS of {}".format(
@@ -55,8 +57,9 @@ def main():
         print("Stream offline")
 
     # Connect to twitch chat irc
-    chat = irc.IRC()
+    chat = irc.IRC(user, stream)
     chat.connect("irc.chat.twitch.tv", 6667)
+    
     #time.sleep(3)
     #chat.close()
     
