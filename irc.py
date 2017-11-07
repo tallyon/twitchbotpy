@@ -72,12 +72,15 @@ class IRC:
                     elif command == "PRIVMSG":
                         # Check if this is bot command
                         if text == "!uptime":
-                            streamTimeSeconds = self.stream.timedeltaSinceStart.seconds
-                            strStreamTime = "{:02}:{:02}:{:02}".format(streamTimeSeconds // 3600, streamTimeSeconds % 3600 // 60, streamTimeSeconds % 60)
-                            game = ""
-                            if self.stream.game != None:
-                                game = self.stream.game
-                            self.SendChannelMessage(channel, "{} is streaming {} for {} PogChamp".format(self.user.name, game, strStreamTime))
+                            if self.stream == None:
+                                self.SendChannelMessage(channel, "Offline FeelsBadMan")
+                            else:
+                                streamTimeSeconds = self.stream.timedeltaSinceStart.seconds
+                                strStreamTime = "{:02}:{:02}:{:02}".format(streamTimeSeconds // 3600, streamTimeSeconds % 3600 // 60, streamTimeSeconds % 60)
+                                game = ""
+                                if self.stream.game != None:
+                                    game = self.stream.game
+                                self.SendChannelMessage(channel, "{} is streaming {} for {} PogChamp".format(self.user.name, game, strStreamTime))
                         elif text == "!social":
                             self.SendChannelMessage(channel, "Podążaj za noiya00 na twitter: https://twitter.com/noiya00 i facebook: https://www.facebook.com/noiya00 Kappa")
     
