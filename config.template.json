@@ -1,4 +1,7 @@
 {
     "clientID": "",
-    "channelName": ""
+    "channelName": "",
+    "chatToken": "",
+    "chatUsername": "",
+    "updateDataInterval": 60
 }

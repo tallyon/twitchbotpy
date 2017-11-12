@@ -5,9 +5,11 @@ import datetime
 
 class IRC:
     """IRC connection"""
-    def __init__(self, user, stream):
+    def __init__(self, chatToken, chatUsername, user, stream):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.killMe = False     # If this is set to True the listen thread will terminate and socket will close
+        self.chatToken = chatToken
+        self.chatUsername = chatUsername
         self.user = user
         self.stream = stream
     
@@ -31,8 +33,8 @@ class IRC:
     
     def Listener(self):
         print("IRC chat listener thread started...")
-        self.JoinServer("oauth:yhgkal2xb81cfrkwa2nw7u25wjk1ar", "thallyon")
-        self.JoinChannel("noiya00")
+        self.JoinServer(self.chatToken, self.chatUsername)
+        self.JoinChannel(self.user.name)
         #self.SendChannelMessage("noiya00", "LUL Kappa Keepo")
         
         #self.killMe = True
@@ -53,6 +55,11 @@ class IRC:
                 #print("no data on socket yet...")
                 
             if buffer != None:
+                bufferStr = str(buffer)
+                # If there is empty string on buffer assume it is to be ignored
+                if len(bufferStr) < 1:
+                    return
+
                 print("\t" + str(buffer))
                 msg = str.split(str(buffer))
                 if len(msg) > 1:

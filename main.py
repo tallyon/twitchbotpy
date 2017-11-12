@@ -2,6 +2,7 @@ import http.client
 import json
 import sys
 import time
+import threading
 import irc
 
 # import models
@@ -56,15 +57,25 @@ def main():
     else:
         print("Stream offline")
 
+    print("\n\n=====================================\nFinished initial data fetching!\n=====================================\n\n")
+
+    print("Starting autoupdater of user data for channel {} every {} seconds".format(config.channelName, config.updateDataInterval))
+    autoupdateUserDataTimer = autoupdateUserData(config.updateDataInterval, config.clientID, config.channelName, user)
+
+    print("Starting autoupdater of stream data for user {} every {} seconds".format(userResponse.user.displayName, config.updateDataInterval))
+    autoUpdateStreamDataTimer =  autoupdateStreamData(config.updateDataInterval, config.clientID, userResponse.user.id, stream)
+
+    print("\n\n=====================================\nFinished starting autoupdaters!\n=====================================\n\n")
+
     # Connect to twitch chat irc
-    chat = irc.IRC(user, stream)
+    chat = irc.IRC(config.chatToken, config.chatUsername , user, stream)
     chat.connect("irc.chat.twitch.tv", 6667)
     
-    #time.sleep(3)
-    #chat.close()
-    
     stdinControl(chat)
+    autoupdateUserDataTimer.cancel()
+    autoUpdateStreamDataTimer.cancel()
     print("TwitchBotPrime dies.")
+    sys.exit(0)
 
 def getToString(host, path):
     conn = http.client.HTTPSConnection(host)
@@ -119,9 +130,55 @@ def stdinControl(chat):
             print("Exiting in 5 seconds...")
             chat.close()
             time.sleep(5)
-            sys.exit(0)
+            return
         else:
             print("Unknown command: {}".format(laststdin))
+
+def autoupdateUserData(intervalSeconds, clientID, channelName, userDataObject):
+    print(object.__repr__(userDataObject))
+    # Get twitch user data
+    response = GetTwitchUser(channelName, clientID)
+    # print(str(response) + "\n\n")
+    userResponse = models.twitch.user.UsersResponse(response)
+    userDataObject = userResponse.user
+
+    if userDataObject != None:
+        print("Updated user data:\n\tTwitch channel {} (login: {}, ID: {})\nView count: {}\nChannel type: {}\nDescription: {}".format(
+            userDataObject.displayName,
+            userDataObject.name,
+            userDataObject.id,
+            userDataObject.viewCount,
+            userDataObject.type,
+            userDataObject.description))
+    else:
+        print("Could no fetch user data for channel {}".format(channelName))
+    
+    # repeat after provided interval
+    timer = threading.Timer(intervalSeconds, autoupdateUserData, args=[intervalSeconds, clientID, channelName, userDataObject])
+    timer.daemon = True
+    timer.start()
+    return timer
+
+def autoupdateStreamData(intervalSeconds, clientID, userID, streamDataObject):
+    response = GetTwitchUserStream(userID, clientID)
+    streamResponse = models.twitch.stream.StreamResponse(response)
+    streamDataObject = streamResponse.stream
+    
+    if streamDataObject != None:
+        print("Updated stream data:\n\tStreaming {} with {} viewers for {} with average FPS of {}".format(
+            streamDataObject.game,
+            streamDataObject.viewers,
+            streamDataObject.timedeltaSinceStart,
+            streamDataObject.avgFPS
+        ))
+    else:
+        print("Stream offline")
+
+    # repeat after provided interval
+    timer = threading.Timer(intervalSeconds, autoupdateStreamData, args=[intervalSeconds, clientID, userID, streamDataObject])
+    timer.daemon = True
+    timer.start()
+    return timer
 
 if __name__ == "__main__":
     main()
