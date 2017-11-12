@@ -1,5 +1,7 @@
 Uses both v5 and new Twitch API to provide Twitch channel summary and statistics.
 
+This bot operates on https://go.twitch.tv/noiya00
+
 ## Running
 
 **Python 3 required**. Written and tested on 3.6
