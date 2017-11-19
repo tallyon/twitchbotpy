@@ -20,7 +20,9 @@ class IRC:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((url, port))
         self.tryReconnect = False
-        self.startListener()
+        # Start listener only once
+        if hasattr(self, "listenThread") == False:
+            self.startListener()
     
     def startListener(self):
         self.listenThread = threading.Thread(target=self.Listener)
