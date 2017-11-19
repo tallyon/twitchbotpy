@@ -6,8 +6,8 @@ import datetime
 class IRC:
     """IRC connection"""
     def __init__(self, chatToken, chatUsername, user, stream):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.killMe = False     # If this is set to True the listen thread will terminate and socket will close
+        self.tryReconnect = False    # If this is set to True the listen thread will try to reconnect every 30 seconds
         self.chatToken = chatToken
         self.chatUsername = chatUsername
         self.user = user
@@ -15,11 +15,17 @@ class IRC:
     
     def connect(self, url, port):
         print("IRC connecting to chat {} on port {}".format(url, port))
+        self.url = url
+        self.port = port
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((url, port))
+        self.tryReconnect = False
+        self.startListener()
+    
+    def startListener(self):
         self.listenThread = threading.Thread(target=self.Listener)
         self.listenThread.start()
-        # self.Listener()
-    
+
     def close(self):
         print("IRC closing connection...")
         self.killMe = True
@@ -60,11 +66,17 @@ class IRC:
                 if len(bufferStr) < 1:
                     return
 
-                print("\t" + str(buffer))
-                msg = str.split(str(buffer))
+                print("\t" + bufferStr)
+                msg = str.split(bufferStr)
+
                 if len(msg) > 1:
                     command = msg[1]
-                    if len(msg) >= 3:
+
+                    # Respond for PING
+                    if msg[:4] == "PING":
+                        print("PONG!")
+                        self.socket.send("PONG")
+                    elif len(msg) >= 3:
                         channel = msg[2]
                         # If channel starts with # remove it
                         if channel[0] == "#":
@@ -72,24 +84,29 @@ class IRC:
                         # Remove first : character in message and lat 4 characters which are \r\n
                         text = msg[3].strip()[1:-5]
                         print("message type {} in channel {} with text {}".format(command, channel, text))
-                    
-                    if command == "PING":
-                        print("Pinged!")
-                        self.socket.send("PONG %s" % text + "\n")
-                    elif command == "PRIVMSG":
-                        # Check if this is bot command
-                        if text == "!uptime":
-                            if self.stream == None:
-                                self.SendChannelMessage(channel, "Offline FeelsBadMan")
-                            else:
-                                streamTimeSeconds = self.stream.timedeltaSinceStart.seconds
-                                strStreamTime = "{:02}:{:02}:{:02}".format(streamTimeSeconds // 3600, streamTimeSeconds % 3600 // 60, streamTimeSeconds % 60)
-                                game = ""
-                                if self.stream.game != None:
-                                    game = self.stream.game
-                                self.SendChannelMessage(channel, "{} is streaming {} for {} PogChamp".format(self.user.name, game, strStreamTime))
-                        elif text == "!social":
-                            self.SendChannelMessage(channel, "Podążaj za noiya00 na twitter: https://twitter.com/noiya00 i facebook: https://www.facebook.com/noiya00 Kappa")
+                        if command == "PRIVMSG":
+                            # Check if this is bot command
+                            if text == "!uptime":
+                                print("Command: !uptime")
+                                if self.stream == None:
+                                    self.SendChannelMessage(channel, "Offline FeelsBadMan")
+                                else:
+                                    streamTimeSeconds = self.stream.timedeltaSinceStart.seconds
+                                    strStreamTime = "{:02}:{:02}:{:02}".format(streamTimeSeconds // 3600, streamTimeSeconds % 3600 // 60, streamTimeSeconds % 60)
+                                    game = ""
+                                    if self.stream.game != None:
+                                        game = self.stream.game
+                                    self.SendChannelMessage(channel, "{} is streaming {} for {} PogChamp".format(self.user.name, game, strStreamTime))
+                            elif text == "!social":
+                                print("Command: !social")
+                                self.SendChannelMessage(channel, "Podążaj za noiya00 na twitter: https://twitter.com/noiya00 i facebook: https://www.facebook.com/noiya00 Kappa")
+                else:
+                    # Zero length string received - socket probably closed
+                    print("RECONNECTING")
+                    self.tryReconnect = True
+                    self.socket.close()
+                    self.connect(self.url, self.port)
+                    time.sleep(30)
     
     def JoinServer(self, oauth, nick):
         print("IRC join server as " + nick + "...")
