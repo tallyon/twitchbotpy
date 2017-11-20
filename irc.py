@@ -20,6 +20,8 @@ class IRC:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((url, port))
         self.tryReconnect = False
+        self.JoinServer(self.chatToken, self.chatUsername)
+        self.JoinChannel(self.user.name)
         # Start listener only once
         if hasattr(self, "listenThread") == False:
             self.startListener()
@@ -41,8 +43,6 @@ class IRC:
     
     def Listener(self):
         print("IRC chat listener thread started...")
-        self.JoinServer(self.chatToken, self.chatUsername)
-        self.JoinChannel(self.user.name)
         #self.SendChannelMessage("noiya00", "LUL Kappa Keepo")
         
         #self.killMe = True
