@@ -33,8 +33,9 @@ class IRC:
     def close(self):
         print("IRC closing connection...")
         self.killMe = True
-        # self.listenThread.join(timeout=5)
-        # self.socket.close()
+        # Make sure that the socket is closed
+        if self.socket._closed == False:
+            self.socket.close
         print("IRC connection closed.")
 
     def sendData(self, command):
@@ -64,18 +65,15 @@ class IRC:
                 
             if buffer != None:
                 bufferStr = str(buffer)
-                # If there is empty string on buffer assume it is to be ignored
-                if len(bufferStr) < 1:
-                    return
 
                 print("\t" + bufferStr)
                 msg = str.split(bufferStr)
 
-                if len(msg) > 1:
+                if len(msg) > 1: 
                     command = msg[1]
 
                     # Respond for PING
-                    if msg[:4] == "PING":
+                    if msg[0][:4] == b"PING":
                         print("PONG!")
                         self.socket.send("PONG")
                     elif len(msg) >= 3:
@@ -104,11 +102,18 @@ class IRC:
                                 self.SendChannelMessage(channel, "Podążaj za noiya00 na twitter: https://twitter.com/noiya00 i facebook: https://www.facebook.com/noiya00 Kappa")
                 else:
                     # Zero length string received - socket probably closed
-                    print("RECONNECTING")
-                    self.tryReconnect = True
-                    self.socket.close()
-                    self.connect(self.url, self.port)
-                    time.sleep(30)
+                    print("reconnecting")
+                    # Make sure that the socket is closed
+                    if self.socket._closed == False:
+                        self.socket.close()
+                    # Open new socket to IRC
+                    self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    self.socket.connect((self.url, self.port))
+                    self.tryReconnect = False
+                    # Join server and chat
+                    self.JoinServer(self.chatToken, self.chatUsername)
+                    self.JoinChannel(self.user.name)
+                    return
     
     def JoinServer(self, oauth, nick):
         print("IRC join server as " + nick + "...")
